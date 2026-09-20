@@ -142,7 +142,7 @@ $$
 x_n = \frac{1}{N} \sum_{k=0}^{N-1} X_k\, \omega^{-kn}
 $$
 
-The only differences from the forward transform are the sign of the exponent and the factor $1/N$. Conjugating flips the sign of the exponent, which gives the trick used in the implementation: $\operatorname{IFFT}(X) = \tfrac{1}{N} \overline{\operatorname{FFT}(\overline{X})}$.
+The only differences from the forward transform are the sign of the exponent and the factor $1/N$. Conjugating flips the sign of the exponent, which gives the trick used in the implementation: $\mathrm{SSE}{IFFT}(X) = \tfrac{1}{N} \overline{\mathrm{SSE}{FFT}(\overline{X})}$.
 
 One piece of code serves both directions.
 
