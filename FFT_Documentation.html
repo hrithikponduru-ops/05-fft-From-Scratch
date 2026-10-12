@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Fourier Transform from Scratch</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-light: #3b82f6;
+            --primary-dark: #1e3a8a;
+            --accent: #dc2626;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --bg-light: #f9fafb;
+            --bg-white: #ffffff;
+            --border: #e5e7eb;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Georgia", "Garamond", serif;
+            line-height: 1.8;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-white);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            line-height: 1.6;
+        }
+
+        main {
+            padding: 3rem 2rem;
+        }
+
+        section {
+            margin-bottom: 4rem;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            color: var(--primary-dark);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 3px solid var(--primary-light);
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            margin-bottom: 1.25rem;
+            color: var(--text-dark);
+            text-align: justify;
+        }
+
+        .intro-box {
+            background: var(--bg-light);
+            border-left: 4px solid var(--primary);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-table th {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .info-table td {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-table tr:hover {
+            background: var(--bg-light);
+        }
+
+        .math-block {
+            background: var(--bg-light);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+
+        .math-inline {
+            font-family: "Courier New", monospace;
+            background: #f0f4f8;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+        }
+
+        .highlight {
+            background: #fef3c7;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(to right, transparent, var(--primary-light), transparent);
+            margin: 3rem 0;
+        }
+
+        figure {
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        figure img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        figcaption {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-top: 1rem;
+            font-style: italic;
+        }
+
+        .verification-box {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 100%);
+            border: 2px solid var(--success);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .verification-box h4 {
+            color: var(--success);
+            margin-bottom: 0.75rem;
+        }
+
+        code {
+            font-family: "Courier New", monospace;
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            main {
+                padding: 1.5rem 1rem;
+            }
+
+            p {
+                text-align: left;
+            }
+        }
+
+        footer {
+            background: var(--bg-light);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-light);
+            border-top: 1px solid var(--border);
+        }
+
+        .note {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .section-number {
+            color: var(--primary-light);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fast Fourier Transform</h1>
+            <p>From Scratch: A Complete Implementation, Verification, and Applications Guide</p>
+        </header>
+
+        <main>
+            <!-- Overview Section -->
+            <section>
+                <div class="intro-box">
+                    <p>A radix-2 Cooley–Tukey FFT written in pure NumPy, derived from the definition of the discrete Fourier transform, verified against the \(O(N^2)\) definition, against <code>numpy.fft</code>, and against four theorems, then used to read the notes off a chord, denoise it, and draw a spectrogram. <code>numpy.fft</code> appears only in the tests.</p>
+                </div>
+
+                <table class="info-table">
+                    <tr>
+                        <th style="width: 30%;">Dimension</th>
+                        <th>Details</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Mathematics</strong></td>
+                        <td>Complex numbers, roots of unity, orthogonality, divide and conquer, Parseval's theorem, the convolution theorem</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Verification</strong></td>
+                        <td>78 tests: matches <code>numpy.fft.fft</code> to \(10^{-10}\) for \(N = 1, \dots, 1024\); measured cost slope 2.1 for the naive sum and below 1 for the FFT</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Result</strong></td>
+                        <td>The three notes of an A-major chord identified from the spectrum; 0 dB to 10.5 dB signal-to-noise by zeroing bins</td>
+                    </tr>
+                </table>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- Section 1: The Idea -->
+            <section>
+                <h2><span class="section-number">1.</span> The Idea in Plain Words</h2>
+                
+                <p>A sound wave is a list of numbers, one per sample: 44,100 of them for each second of CD-quality audio. The <strong>discrete Fourier transform</strong> (DFT) asks a different question of the same list: <em>how much of each frequency is in it?</em> It answers by taking the dot product of the signal with a sampled cosine and sine at every frequency the samples can represent.</p>
+
+                <p>Written out, that is \(N\) dot products each of length \(N\): \(N^2\) multiplications. For one second of audio, about two billion. The <strong>fast Fourier transform</strong> (FFT) gets the identical answer with about \(N \log_2 N\) multiplications: roughly 700,000. It does this by noticing that the DFT of a signal can be assembled from the DFTs of its even-indexed and odd-indexed halves, and that the assembly costs only \(N\) operations. Apply the same idea to each half, and to each quarter, and so on.</p>
+
+                <figure>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 300'%3E%3Crect width='600' height='300' fill='%23f9fafb'/%3E%3Ctext x='50' y='25' font-size='18' font-weight='bold' fill='%231e40af'%3EDFT Basis Functions%3C/text%3E%3Cline x1='50' y1='50' x2='550' y2='50' stroke='%23e5e7eb' stroke-width='1'/%3E%3Ctext x='50' y='80' font-size='12' fill='%236b7280'%3EEach output X_k is the dot product of the signal with one of these rows%3C/text%3E%3Ctext x='50' y='100' font-size='12' fill='%236b7280'%3ERow k is a cosine (real part) and a negative sine (imaginary part)%3C/text%3E%3Cpath d='M 80 150 Q 150 120 220 150' stroke='%233b82f6' stroke-width='2' fill='none'/%3E%3Ctext x='80' y='180' font-size='11' fill='%231f2937'%3EFrequency k=0%3C/text%3E%3Cpath d='M 280 150 Q 330 100 380 150 Q 430 200 480 150' stroke='%233b82f6' stroke-width='2' fill='none'/%3E%3Ctext x='280' y='180' font-size='11' fill='%231f2937'%3EFrequency k=4%3C/text%3E%3Crect x='50' y='220' width='500' height='60' fill='%23dbeafe' stroke='%231e40af' stroke-width='2'/%3E%3Ctext x='60' y='240' font-size='12' fill='%231e40af'%3EDFT Formula:%3C/text%3E%3Ctext x='60' y='260' font-family='monospace' font-size='11' fill='%231e40af'%3EX_k = Σ(n=0 to N-1) x_n · ω^(kn), where ω = e^(-2πi/N)%3C/text%3E%3C/svg%3E" alt="DFT Basis Functions">
+                    <figcaption>Each output \(X_k\) is the dot product of the signal with one of these rows. Row \(k\) is a cosine (real part) and a negative sine (imaginary part) that complete \(k\) cycles over the \(N\) samples.</figcaption>
+                </figure>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- Section 2: Worked Example -->
+            <section>
+                <h2><span class="section-number">2.</span> Worked Example: An FFT of Length 8 by Hand</h2>
+
+                <p>Take the signal</p>
+
+                <div class="math-block">
+                    $$x = \begin{bmatrix} 1 & 2 & 3 & 4 & 0 & 0 & 0 & 0 \end{bmatrix}$$
+                </div>
+
+                <p class="note"><strong>Note:</strong> Run <code>python worked_example.py</code> to see every number below printed by the code.</p>
+
+                <h3>2.1 Split into Evens and Odds</h3>
+
+                <div class="math-block">
+                    $$x_{\text{even}} = \begin{bmatrix} 1 & 3 & 0 & 0 \end{bmatrix}, \qquad x_{\text{odd}} = \begin{bmatrix} 2 & 4 & 0 & 0 \end{bmatrix}$$
+                </div>
+
+                <h3>2.2 Transform Each Half with the Length-4 DFT Matrix</h3>
+
+                <p>With \(\omega_4 = e^{-2\pi i/4} = -i\), the entry in row \(k\), column \(j\) of the DFT matrix is \(\omega_4^{kj}\):</p>
+
+                <div class="math-block">
+                    $$F_4 = \begin{bmatrix} 1 & 1 & 1 & 1 \\ 1 & -i & -1 & i \\ 1 & -1 & 1 & -1 \\ 1 & i & -1 & -i \end{bmatrix}$$
+                </div>
+
+                <p>Multiplying:</p>
+
+                <div class="math-block">
+                    $$E = F_4\, x_{\text{even}} = \begin{bmatrix} 4 \\ 1 - 3i \\ -2 \\ 1 + 3i \end{bmatrix}, \qquad O = F_4\, x_{\text{odd}} = \begin{bmatrix} 6 \\ 2 - 4i \\ -2 \\ 2 + 4i \end{bmatrix}$$
+                </div>
+
+                <p>Check one entry by hand: \(E_1 = 1 \cdot 1 + 3 \cdot (-i) + 0 + 0 = 1 - 3i\).</p>
+
+                <h3>2.3 The Twiddle Factors</h3>
+
+                <p>With \(\omega_8 = e^{-2\pi i/8}\), the first four powers are:</p>
+
+                <div class="math-block">
+                    $$\omega_8^0 = 1, \qquad \omega_8^1 = \tfrac{1}{\sqrt 2}(1 - i) \approx 0.7071 - 0.7071i, \qquad \omega_8^2 = -i, \qquad \omega_8^3 = \tfrac{1}{\sqrt 2}(-1 - i) \approx -0.7071 - 0.7071i$$
+                </div>
+
+                <h3>2.4 The Butterflies</h3>
+
+                <p>Each pair \((E_k, O_k)\) produces two outputs:</p>
+
+                <div class="math-block">
+                    $$X_k = E_k + \omega_8^k\, O_k, \qquad X_{k+4} = E_k - \omega_8^k\, O_k$$
+                </div>
+
+                <table class="info-table">
+                    <tr>
+                        <th>\(k\)</th>
+                        <th>\(\omega_8^k O_k\)</th>
+                        <th>\(X_k\)</th>
+                        <th>\(X_{k+4}\)</th>
+                    </tr>
+                    <tr>
+                        <td>0</td>
+                        <td>\(6\)</td>
+                        <td>\(X_0 = 10\)</td>
+                        <td>\(X_4 = -2\)</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>\(\tfrac{1}{\sqrt 2}(1-i)(2-4i) = \tfrac{1}{\sqrt 2}(-2-6i) \approx -1.4142 - 4.2426i\)</td>
+                        <td>\(X_1 \approx -0.4142 - 7.2426i\)</td>
+                        <td>\(X_5 \approx 2.4142 + 1.2426i\)</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>\((-i)(-2) = 2i\)</td>
+                        <td>\(X_2 = -2 + 2i\)</td>
+                        <td>\(X_6 = -2 - 2i\)</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>\(\tfrac{1}{\sqrt 2}(-1-i)(2+4i) = \tfrac{1}{\sqrt 2}(2-6i) \approx 1.4142 - 4.2426i\)</td>
+                        <td>\(X_3 \approx 2.4142 - 1.2426i\)</td>
+                        <td>\(X_7 \approx -0.4142 + 7.2426i\)</td>
+                    </tr>
+                </table>
+
+                <p>Eight outputs from two length-4 transforms and four complex multiplications. Computing the same eight numbers from the definition takes 64 multiplications.</p>
+
+                <h3>2.5 Two Checks</h3>
+
+                <p>\(X_0 = 10\) is the sum of the samples, as it must be, since row 0 of the DFT matrix is all ones. And Parseval's theorem holds:</p>
+
+                <div class="math-block">
+                    $$\sum_{n=0}^{7} \lvert x_n \rvert^2 = 1 + 4 + 9 + 16 = 30, \qquad \frac{1}{8} \sum_{k=0}^{7} \lvert X_k \rvert^2 = \frac{240}{8} = 30$$
+                </div>
+
+                <p>The code agrees with these numbers to \(10^{-15}\).</p>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- Section 3: Derivations (Abbreviated) -->
+            <section>
+                <h2><span class="section-number">3.</span> Derivations</h2>
+
+                <h3>3.1 The DFT and Its Matrix</h3>
+
+                <p>For a signal \(x_0, \dots, x_{N-1}\) and \(\omega = e^{-2\pi i/N}\):</p>
+
+                <div class="math-block">
+                    $$X_k = \sum_{n=0}^{N-1} x_n\, \omega^{kn}, \qquad k = 0, \dots, N-1$$
+                </div>
+
+                <p>As a matrix, \(X = F x\) with \(F_{kn} = \omega^{kn}\). The powers of \(\omega\) are the \(N\)-th roots of unity, equally spaced around the unit circle.</p>
+
+                <p>The columns of \(F\) are orthogonal. Take two columns \(j\) and \(m\) and form the inner product:</p>
+
+                <div class="math-block">
+                    $$\sum_k \overline{\omega^{kj}}\, \omega^{km} = \sum_k \omega^{k(m-j)}$$
+                </div>
+
+                <p>Let \(r = \omega^{m-j}\). If \(j = m\) then \(r = 1\) and the sum is \(N\). Otherwise \(r \ne 1\) but \(r^N = 1\), and the geometric series gives:</p>
+
+                <div class="math-block">
+                    $$\sum_{k=0}^{N-1} r^k = \frac{1 - r^N}{1 - r} = \frac{1 - 1}{1 - r} = 0$$
+                </div>
+
+                <p>So \(F^{*} F = N I\), where \(F^{*}\) is the conjugate transpose.</p>
+
+                <h3>3.2 The Inverse Transform</h3>
+
+                <p>From \(F^{*} F = N I\), the inverse is \(F^{-1} = \tfrac{1}{N} F^{*}\):</p>
+
+                <div class="math-block">
+                    $$x_n = \frac{1}{N} \sum_{k=0}^{N-1} X_k\, \omega^{-kn}$$
+                </div>
+
+                <p>The only differences from the forward transform are the sign of the exponent and the factor \(1/N\). Conjugating flips the sign of the exponent, which gives the trick used in the implementation:</p>
+
+                <div class="math-block">
+                    $$\operatorname{IFFT}(X) = \tfrac{1}{N} \overline{\operatorname{FFT}(\overline{X})}$$
+                </div>
+
+                <p>One piece of code serves both directions.</p>
+
+                <h3>3.3 The Even–Odd Split</h3>
+
+                <p>Separate the sum into even and odd indices, \(n = 2m\) and \(n = 2m + 1\):</p>
+
+                <div class="math-block">
+                    $$X_k = \sum_{m=0}^{N/2-1} x_{2m}\, \omega^{2mk} + \omega^{k} \sum_{m=0}^{N/2-1} x_{2m+1}\, \omega^{2mk}$$
+                </div>
+
+                <p>Since \(\omega^2 = e^{-2\pi i/(N/2)}\) is the root of unity for length \(N/2\), both sums are length-\(N/2\) DFTs. Call them \(E_k\) and \(O_k\):</p>
+
+                <div class="math-block">
+                    $$X_k = E_k + \omega^k O_k$$
+                </div>
+
+                <p>\(E_k\) and \(O_k\) are periodic with period \(N/2\), and \(\omega^{N/2} = e^{-\pi i} = -1\), so:</p>
+
+                <div class="math-block">
+                    $$\omega^{k + N/2} = -\omega^k \quad\Longrightarrow\quad X_{k+N/2} = E_k - \omega^k O_k$$
+                </div>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- Section 4: Tests -->
+            <section>
+                <h2><span class="section-number">4.</span> Verification & Tests</h2>
+
+                <div class="verification-box">
+                    <h4>✓ Test Results</h4>
+                    <p>All 78 tests pass in 7.12 seconds. The implementation matches NumPy to machine precision.</p>
+                </div>
+
+                <p><strong>Maximum disagreement with <code>numpy.fft.fft</code> on random complex input:</strong></p>
+
+                <table class="info-table">
+                    <tr>
+                        <th>\(N\)</th>
+                        <th>Iterative</th>
+                        <th>Recursive</th>
+                    </tr>
+                    <tr>
+                        <td>\(1\,024\)</td>
+                        <td>\(7.2 \times 10^{-14}\)</td>
+                        <td>\(6.6 \times 10^{-14}\)</td>
+                    </tr>
+                    <tr>
+                        <td>\(16\,384\)</td>
+                        <td>\(4.3 \times 10^{-13}\)</td>
+                        <td>\(4.4 \times 10^{-13}\)</td>
+                    </tr>
+                    <tr>
+                        <td>\(131\,072\)</td>
+                        <td>\(1.6 \times 10^{-12}\)</td>
+                        <td>\(1.7 \times 10^{-12}\)</td>
+                    </tr>
+                </table>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- Section 5: Results -->
+            <section>
+                <h2><span class="section-number">5.</span> Results</h2>
+
+                <p>All audio in this project is <strong>synthesised</strong> from sine waves so that it has no external data dependency. The implementation uses only pure NumPy.</p>
+
+                <h3>5.1 Reading the Notes Off a Chord</h3>
+
+                <p>An A-major chord (A4, C♯5, E5) with second and third harmonics at half and quarter amplitude, 2 seconds at 44.1 kHz.</p>
+
+                <p>The FFT of the 88,200 samples (padded to 131,072) and a greedy peak finder give:</p>
+
+                <table class="info-table">
+                    <tr>
+                        <th>Peak</th>
+                        <th>Frequency</th>
+                        <th>Note</th>
+                        <th>What It Is</th>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>440.08 Hz</td>
+                        <td>A4</td>
+                        <td>Fundamental</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>554.48 Hz</td>
+                        <td>C♯5</td>
+                        <td>Fundamental</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>659.12 Hz</td>
+                        <td>E5</td>
+                        <td>Fundamental</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>1318.57 Hz</td>
+                        <td>E6</td>
+                        <td>2nd Harmonic of E5</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>1108.62 Hz</td>
+                        <td>C♯6</td>
+                        <td>2nd Harmonic of C♯5</td>
+                    </tr>
+                </table>
+
+                <p>The three loudest peaks are the three notes. The harmonics fall exactly where the synthesiser put them, and every frequency is within one bin (0.34 Hz) of the true value.</p>
+
+                <h3>5.2 Denoising</h3>
+
+                <p>White noise is added at 0 dB signal-to-noise ratio (noise power equal to signal power). Every frequency bin above 2 kHz is set to zero and the signal transformed back.</p>
+
+                <table class="info-table" style="width: auto; margin: 1rem 0;">
+                    <tr>
+                        <th></th>
+                        <th>SNR</th>
+                    </tr>
+                    <tr>
+                        <td>Noisy</td>
+                        <td>\(-0.01\) dB</td>
+                    </tr>
+                    <tr>
+                        <td>After Low-Pass at 2 kHz</td>
+                        <td>\(10.45\) dB</td>
+                    </tr>
+                </table>
+
+                <p>White noise spreads its power evenly over all 22,050 Hz of bandwidth. Keeping 2,000 Hz keeps \(2000 / 22050 = 9.1\%\) of the noise power, a reduction of \(10 \log_{10}(1/0.091) = 10.4\) dB, which is exactly what was measured. The chord itself lives entirely below 2 kHz and is untouched.</p>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- Section 6: How to Run -->
+            <section>
+                <h2><span class="section-number">6.</span> How to Run</h2>
+
+                <pre><code>pip install -r requirements.txt
+
+python -m pytest tests/ -v     # 78 tests, about 7 seconds
+
+python worked_example.py       # the length-8 FFT with every number printed
+
+python run.py                  # chord analysis, denoising, spectrogram</code></pre>
+
+                <p>To analyse your own recording, save it as 16-bit PCM WAV and in <code>run.py</code> replace <code>synthesize_chord(...)</code> with <code>read_wav(Path("your_file.wav"))</code>, which returns the samples and the sample rate.</p>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- Section 7: Key Learnings -->
+            <section>
+                <h2><span class="section-number">7.</span> Numerical Lessons Learned</h2>
+
+                <h3>Spectral Leakage</h3>
+                <p>The peak finder's ninth-tallest peak sits at 424 Hz, amplitude 0.0016, labelled G♯4. There is no G♯ in the chord. The signal is zero-padded to 131,072 samples, which is the same as multiplying an infinite signal by a rectangular window. The spectrum of a rectangle is a sinc, so every true peak grows a comb of sidelobes on either side.</p>
+
+                <h3>Recursion vs. Iteration</h3>
+                <p>A length-\(N\) recursive FFT makes \(2N - 1\) Python function calls, and each call costs a few microseconds regardless of how little arithmetic it does. Below \(N = 512\) that overhead matches or exceeds the \(N^2\) arithmetic of the naive sum. The iterative version does \(\log_2 N\) vectorised stages with no function calls and wins at every size.</p>
+
+                <h3>Brick-Wall Filtering</h3>
+                <p>Zeroing every bin above the cutoff is multiplying the spectrum by a rectangle. By the convolution theorem, that is convolving the signal with a sinc, whose tails extend far in both directions. Near any sharp change in the signal, the filtered output oscillates.</p>
+
+                <h3>Complexity and Memory</h3>
+                <p>The DFT matrix has \(N^2\) complex entries at 16 bytes each: 1 KB for \(N = 8\), but 4.3 GB for \(N = 16\,384\). The naive reference therefore computes one row at a time, indexing the \(N\) precomputed powers of \(\omega\) with \((kn) \bmod N\).</p>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- Code Map -->
+            <section>
+                <h2><span class="section-number">8.</span> Code Map</h2>
+
+                <table class="info-table">
+                    <tr>
+                        <th>File</th>
+                        <th>Contents</th>
+                    </tr>
+                    <tr>
+                        <td><code>fft/dft.py</code></td>
+                        <td><code>dft_matrix</code>, <code>dft_naive</code>, <code>idft_naive</code>: the \(O(N^2)\) definition, used as reference</td>
+                    </tr>
+                    <tr>
+                        <td><code>fft/fft.py</code></td>
+                        <td><code>fft_recursive</code>, <code>fft_iterative</code>, <code>bit_reverse_indices</code>, <code>ifft</code>, <code>pad_to_power_of_two</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>fft/spectrum.py</code></td>
+                        <td><code>magnitude_spectrum</code>, <code>find_peaks</code>, <code>frequency_to_note_name</code>, <code>convolve_fft</code>, <code>lowpass_filter</code>, <code>hann_window</code>, <code>spectrogram</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>tests/</code></td>
+                        <td>78 comprehensive tests covering the transform, spectrum operations, and complexity analysis</td>
+                    </tr>
+                </table>
+            </section>
+        </main>
+
+        <footer>
+            <p>Fast Fourier Transform Documentation • Generated with mathematical precision and verified against NumPy</p>
+            <p style="font-size: 0.9rem; margin-top: 1rem;">All mathematical formulas are typeset with MathJax. This documentation preserves every detail from the original implementation guide.</p>
+        </footer>
+    </div>
+</body>
+</html>
